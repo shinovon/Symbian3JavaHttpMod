@@ -66,7 +66,7 @@ public class HttpConnectionPatched extends DataConnection implements CreateConne
 	HttpOutputStream os;
 	String proxyName;
 	int port, proxyPort;
-	boolean followRedirects = true;
+	boolean followRedirects;
 	boolean sendChunked = false;
 	String socketOptions = ""; //$NON-NLS-1$
 	StreamConnection socket;
@@ -700,7 +700,8 @@ public void setRequestMethod(String method) throws IOException {
 	if (sentRequest) throw new IOException(com.ibm.oti.util.Msg.getString("K0037"));
 	// ignore if an output stream has already been opened to write POST data
 	if (os != null) return;
-	if (!method.equals(GET) && !method.equals(HEAD) && !method.equals(POST))
+	if (!method.equals("GET") && !method.equals("HEAD") && !method.equals("POST")
+			&& !method.equals("PUT") && !method.equals("DELETE") && !method.equals("OPTIONS") && !method.equals("PATCH"))
 		throw new IOException(com.ibm.oti.util.Msg.getString("K00ad"));
 	this.method = method;
 }
@@ -759,6 +760,7 @@ public void setConnectionParameters(String params) {
 			if (value.equals("false")) followRedirects = false;
 			else if (!value.equals("true"))
 				throw new IllegalArgumentException(com.ibm.oti.util.Msg.getString("K00b5", equates[i][1]));
+			else followRedirects = true;
 		} else if (equates[i][0].equals("chunked") && equates[i][1] != null) {
 			String value = equates[i][1].toLowerCase();
 			if (value.equals("true")) sendChunked = true;
@@ -1258,7 +1260,9 @@ public OutputStream openOutputStream() throws IOException {
 	if (outputStatus != UNOPENED) throw new IOException(com.ibm.oti.util.Msg.getString("K0192"));
 
 	if (os == null) {
-
+		if (method == null || "GET".equals(method)) {
+			method = "POST";
+		}
 		String encoding = reqHeader.get("Transfer-Encoding");
 		if (encoding != null) encoding = encoding.toLowerCase();
 		os = new HttpOutputStream(sendChunked || "chunked".equals(encoding));
